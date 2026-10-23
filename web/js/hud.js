@@ -95,7 +95,48 @@ class HUD {
     //DRAW: Image corner
     sprite(playerPic2, 2, 36, 20, 20, 725, 725, 50, 50);
 
+    this.drawBirds();
+  }
 
+
+  //DRAW: smaller HUD for 3-4 players, one in each corner (P1 top left, P2 bottom right, P3 top right, P4 bottom left)
+  renderCompact(player, index) {
+    const mirror = index == 1 || index == 2;
+    const y = (index == 0 || index == 2) ? 25 : 725;
+    const x = (pos) => mirror ? width - pos : pos;
+    imageMode(CENTER);
+
+    //DRAW: Image in corner
+    sprite(playerPics[index], 2, 36, 20, 20, x(25), y, 50, 50);
+
+    //DRAW: Live
+    for (let h = 0; h < 3; h++) {
+      pic(h < player.live ? heart : heart0, x(64 + 22 * h), y, 20, 20);
+    }
+
+    //DRAW: Speed, Bombinv, Explosionradius
+    textSize(14);
+    fill(100, 100, 255);
+    rect(x(167), y, 56, 18);
+    pic(skater, x(167) + (mirror ? 26 : -26), y, 76, 76);
+    fill(100, 100, 100);
+    rect(x(237), y, 56, 18);
+    sprite(bombPic, 32, 0, 16, 16, x(237) + (mirror ? 24 : -24), y + 2, 20, 20);
+    fill(200, 100, 0);
+    rect(x(307), y, 56, 18);
+    pic(fire, x(307) + (mirror ? 26 : -26), y, 76, 76);
+
+    fill(255);
+    const textX = (pos) => x(pos) + (mirror ? -6 : 6);
+    text("x " + (player.speed - 1), textX(167), y + 5);
+    text("x " + player.invBomb, textX(237), y + 5);
+    text("x " + player.explosionRadius, textX(307), y + 5);
+    imageMode(CORNER);
+  }
+
+
+  drawBirds() {
+    imageMode(CENTER);
     //DRAW: Enviroment
     //birds
     const birdFrame = 20 * (idiv(frame, 10) % 4);
@@ -238,6 +279,7 @@ class HUD {
       if (keyIsPressed) {
         keyBombOne = keyCode;
         keyChangeOne = false;
+        saveSettings();
       }
     }
     //USE: Change bombkey P2
@@ -258,6 +300,7 @@ class HUD {
       if (keyIsPressed) {
         keyBombTwo = keyCode;
         keyChangeTwo = false;
+        saveSettings();
       }
     }
 
@@ -267,6 +310,7 @@ class HUD {
       if (soundChange && mouseIsPressed) {
         if (volume > 0) {
           volume--;
+          saveSettings();
         }
         if (!click.isPlaying()) {
           click.play(1, 0.05 * volume);
@@ -280,6 +324,7 @@ class HUD {
       if (soundChange && mouseIsPressed) {
         if (volume < 4) {
           volume++;
+          saveSettings();
         }
         if (!click.isPlaying()) {
           click.play(1, 0.05 * volume);

@@ -90,7 +90,7 @@ class Karte {
           if (explosionActive && bombActive) {
             this.map[i][j] = 1;
 
-            const item = toInt(random(1, 50));
+            const item = toInt(1 + rng() * 49); // random (1,50)
 
             // 1: Bomb+ Item | 2: Radius+ Item | 3: Speed+ Item
             if (item >= 1 && item <= 8) {

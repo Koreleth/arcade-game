@@ -6,6 +6,9 @@ SoundFile
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+// MUTE: while an online client catches up on many frames at once
+let soundMuted = false;
+
 class SoundFile {
 
   constructor(path) {
@@ -23,7 +26,7 @@ class SoundFile {
   }
 
   start(rate, amp, loop) {
-    if (!this.buffer) {
+    if (!this.buffer || soundMuted) {
       return;
     }
     const source = audioCtx.createBufferSource();

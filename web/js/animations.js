@@ -17,7 +17,8 @@ class Animations {
         if (!click.isPlaying()) {
           click.play(1, 0.05 * volume);
         }
-        gamemode = 2;
+        //OPEN: local / online selection
+        showScreen(5);
       }
     } else if (!(mouseX < 70 && mouseX > 10 && mouseY < 70 && mouseY > 10) &&
       !(mouseX < 740 && mouseX > 680 && mouseY < 60 && mouseY > 10)) {
@@ -101,8 +102,9 @@ class Animations {
 
     //RESET: hitframe for cooldown
     if (seconds % 5 == 4) {
-      playerOne.hitframe = frame;
-      playerTwo.hitframe = frame;
+      for (const player of players) {
+        player.hitframe = frame;
+      }
       startTimer = true;
       if (!ambient.isPlaying()) {
         ambient.loop(1, 0.1 * volume);
@@ -112,21 +114,20 @@ class Animations {
 
   coolDownTimer() {
     //cooldown Timer
-    if (playerOne.cooldown && (frame - playerOne.hitframe) % 120 == 0) {
-      playerOne.respawn();
-      spawn.play(1, 0.05 * volume);
-      playerOne.cooldown = false;
+    for (const player of players) {
+      if (player.cooldown && (frame - player.hitframe) % 120 == 0) {
+        player.respawn();
+        if (player.live > 0) {
+          spawn.play(1, 0.05 * volume);
+        }
+        player.cooldown = false;
+      }
     }
-    if (playerTwo.cooldown && (frame - playerTwo.hitframe) % 120 == 0) {
-      playerTwo.respawn();
-      spawn.play(1, 0.05 * volume);
-      playerTwo.cooldown = false;
-    }
-    if (playerOne.respawntimer && (frame - playerOne.hitframe) % 300 == 0) {
-      playerOne.respawntimer = false;
-    }
-    if (playerTwo.respawntimer && (frame - playerTwo.hitframe) % 240 == 0) {
-      playerTwo.respawntimer = false;
+    //respawn protection (blinking), the same for every player
+    for (const player of players) {
+      if (player.respawntimer && (frame - player.hitframe) % 300 == 0) {
+        player.respawntimer = false;
+      }
     }
     //cooldown Timer end
   }
@@ -140,42 +141,42 @@ class Animations {
     }
 
     //Show WinnerTIE
-    if ((playerOne.live == 0 && !playerOne.cooldown) && (playerTwo.live == 0 && !playerTwo.cooldown)) {
+    if (winner == -1) {
       textFont(geospeed);
       textSize(128);
       fill(255);
       text("TIE", animationCounter, height / 2 + 40);
 
     } else {
-      //SHOW Winner P2
-      if (playerOne.live == 0) {
+      //SHOW Winner P2 / P4 (picture on the left)
+      if (winner % 2 == 1) {
 
         textFont(geospeed);
         textSize(48);
         fill(255);
-        text("PLAYER TWO", animationCounter - 130, (height / 2) + 20);
+        text(PLAYER_NAMES[winner], animationCounter - 130, (height / 2) + 20);
         text("WINS", animationCounter - 130, (height / 2) + 60);
-        pic(bomberman2, animationCounter - 80, 0);
+        pic(winPics[winner], animationCounter - 80, 0);
 
-        if (!endSound) {
-          winP2.play(1, 0.1 * volume);
-          endSound = true;
-        }
-
-      //SHOW WIinner P1
-      } else if (playerTwo.live == 0) {
+      //SHOW WIinner P1 / P3 (picture on the right)
+      } else {
         textFont(geospeed);
         textSize(48);
         fill(255);
-        text("PLAYER ONE", animationCounter + 150, (height / 2));
+        text(PLAYER_NAMES[winner], animationCounter + 150, (height / 2));
         text("WINS", animationCounter + 150, (height / 2) + 40);
         scale(-1, 1);
-        pic(bomberman, -1 * animationCounter - 200, 0);
+        pic(winPics[winner], -1 * animationCounter - 200, 0);
         scale(-1, 1);
-        if (!endSound) {
+      }
+      //SOUND: there are only voice lines for player one and two
+      if (!endSound) {
+        if (winner == 0) {
           winP1.play(1, 0.1 * volume);
-          endSound = true;
+        } else if (winner == 1) {
+          winP2.play(1, 0.1 * volume);
         }
+        endSound = true;
       }
     }
     //ANIMATION draw

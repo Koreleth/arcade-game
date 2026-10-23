@@ -3,6 +3,11 @@
   src: url("font/pixel.ttf");
 }
 
+@font-face {
+  font-family: "Geospeed";
+  src: url("font/geospeed.ttf");
+}
+
 html, body {
   margin: 0;
   height: 100%;
@@ -16,12 +21,162 @@ body {
   justify-content: center;
 }
 
-/* Scale the 750x750 canvas to the window, keeping it square */
+/* Scale the 750x750 game to the window, keeping it square. --u = one game pixel */
+#game {
+  --u: calc(min(100vw, 100vh) / 750);
+  position: relative;
+  width: min(100vw, 100vh);
+  height: min(100vw, 100vh);
+}
+
 canvas {
   display: block;
-  width: min(100vw, 100vh) !important;
-  height: min(100vw, 100vh) !important;
+  width: 100% !important;
+  height: 100% !important;
 }
+
+/* ---------- Panels (local / online, lobby) ---------- */
+
+.panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  width: calc(var(--u) * 470);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 14);
+  padding: calc(var(--u) * 28);
+  background: rgba(29, 42, 77, 0.94);
+  border: calc(var(--u) * 4) solid #fff;
+  color: #fff;
+  font-family: "Pixel", monospace;
+  font-size: calc(var(--u) * 20);
+  text-align: center;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+.panel h2 {
+  margin: 0 0 calc(var(--u) * 6);
+  font-family: "Geospeed", sans-serif;
+  font-size: calc(var(--u) * 48);
+  font-weight: normal;
+}
+
+.panel p {
+  margin: 0;
+}
+
+.panel button,
+.panel input {
+  font: inherit;
+  font-size: calc(var(--u) * 22);
+  padding: calc(var(--u) * 12);
+  color: #fff;
+  background: #5273b5;
+  border: calc(var(--u) * 3) solid #fff;
+}
+
+.panel button {
+  cursor: pointer;
+}
+
+.panel button:hover:not(:disabled),
+.panel button:focus-visible {
+  color: #eb8c46;
+  outline: none;
+}
+
+.panel button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.panel button[hidden] {
+  display: none;
+}
+
+.panel button.secondary {
+  background: transparent;
+}
+
+.join {
+  display: flex;
+  gap: calc(var(--u) * 10);
+}
+
+.join input {
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+  color: #1d2a4d;
+  text-align: center;
+  letter-spacing: 0.3em;
+}
+
+.join input::placeholder {
+  color: #9aa6c4;
+  letter-spacing: 0.1em;
+}
+
+.status {
+  min-height: 1.2em;
+  color: #eb8c46;
+}
+
+.code-label {
+  font-size: calc(var(--u) * 16);
+  opacity: 0.8;
+}
+
+.code {
+  font-size: calc(var(--u) * 64);
+  letter-spacing: 0.2em;
+  cursor: copy;
+}
+
+#lobby-slots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(var(--u) * 8);
+}
+
+#lobby-slots li {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 8);
+  padding: calc(var(--u) * 6);
+  border: calc(var(--u) * 2) solid rgba(255, 255, 255, 0.35);
+  font-size: calc(var(--u) * 14);
+  text-align: left;
+}
+
+#lobby-slots li.me {
+  border-color: #eb8c46;
+}
+
+#lobby-slots li.free {
+  opacity: 0.4;
+}
+
+/* front facing frame of the 192x224 sprite sheet, shown 2x */
+.slot-pic {
+  flex: none;
+  width: calc(var(--u) * 48);
+  height: calc(var(--u) * 64);
+  background-size: calc(var(--u) * 384) calc(var(--u) * 448);
+  background-position: 0 calc(var(--u) * -64);
+  image-rendering: pixelated;
+}
+
+/* ---------- Start overlay ---------- */
 
 #start-overlay {
   position: fixed;

@@ -14,6 +14,39 @@ function toInt(n) {
   return Math.trunc(n);
 }
 
+// RANDOM: seeded generator (mulberry32), online every browser gets the same items with the same seed
+function seededRandom(seed) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// SETTINGS: saved only in this browser (volume and bomb keys)
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("bomberman-settings"));
+    if (saved) {
+      volume = saved.volume ?? volume;
+      keyBombOne = saved.keyBombOne ?? keyBombOne;
+      keyBombTwo = saved.keyBombTwo ?? keyBombTwo;
+    }
+  } catch (e) {
+    // private mode / blocked storage -> defaults
+  }
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem("bomberman-settings", JSON.stringify({ volume, keyBombOne, keyBombTwo }));
+  } catch (e) {
+    // private mode / blocked storage -> settings only for this session
+  }
+}
+
 // new int [15][15]
 function grid() {
   return Array.from({ length: 15 }, () => new Array(15).fill(0));

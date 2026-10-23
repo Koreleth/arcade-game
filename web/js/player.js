@@ -38,18 +38,6 @@ class Player {
     this.lastDirection = 0;
   }
 
-  reset() {
-    this.live = 3;
-    this.speed = 2;
-    this.invBomb = 1;
-    this.explosionRadius = 1;
-    this.lastDirection = 0;
-    this.pos.x = this.spawnPos.x;
-    this.pos.y = this.spawnPos.y;
-    endSound = false;
-    this.cooldown = false;
-  }
-
   render(playerPic) {
     rectMode(CENTER);
 
@@ -217,43 +205,21 @@ class Player {
   }
 
 
-  //for movement
+  //for movement (direction: 0 = up, 1 = down, 2 = left, 3 = right)
 
-  keyPressed(keyCodePlayer) {
-    if (keyCodePlayer[0] == keyCode) {
-      this.keys[0] = true;
+  pressDirection(direction) {
+    this.keys[direction] = true;
+    //up / down stops left / right and the other way around
+    if (direction < 2) {
       this.keys[2] = false;
       this.keys[3] = false;
-    }
-    if (keyCodePlayer[1] == keyCode) {
-      this.keys[1] = true;
-      this.keys[2] = false;
-      this.keys[3] = false;
-    }
-    if (keyCodePlayer[2] == keyCode) {
-      this.keys[2] = true;
-      this.keys[0] = false;
-      this.keys[1] = false;
-    }
-    if (keyCodePlayer[3] == keyCode) {
-      this.keys[3] = true;
+    } else {
       this.keys[0] = false;
       this.keys[1] = false;
     }
   }
 
-  keyReleased(keyCodePlayer) {
-    if (keyCodePlayer[0] == keyCode) {
-      this.keys[0] = false;
-    }
-    if (keyCodePlayer[1] == keyCode) {
-      this.keys[1] = false;
-    }
-    if (keyCodePlayer[2] == keyCode) {
-      this.keys[2] = false;
-    }
-    if (keyCodePlayer[3] == keyCode) {
-      this.keys[3] = false;
-    }
+  releaseDirection(direction) {
+    this.keys[direction] = false;
   }
 }

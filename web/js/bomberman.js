@@ -2,7 +2,7 @@
 Bomberman:
   Autor: Korel Öztekin
   date: 15.03.2024
-  version: 1.0.0 (web port with p5.js)
+  version: 1.1.0 (web port with p5.js, online mode for up to 4 players)
 */
 
 let menuSong;
@@ -34,6 +34,8 @@ let items;
 let explosionPic;
 let playerPic1;
 let playerPic2;
+let playerPic3;
+let playerPic4;
 let skater0;
 let skater;
 let fire;
@@ -50,13 +52,17 @@ let tutorial;
 //player variables
 let keyCodeOne = [87, 83, 65, 68]; //playerOne -> w,s,a,d and SPACE
 let keyCodeTwo = [38, 40, 37, 39]; //playerTwo -> Arrowkeys and ALTGR
-let playerOne;
-let playerTwo;
 let keyBombOne = 32;
 let keyBombTwo = 18;
+let players = [];
+let playerPics = [];
+let winPics = [];
+let hitSounds = [];
+const PLAYER_NAMES = ["PLAYER ONE", "PLAYER TWO", "PLAYER THREE", "PLAYER FOUR"];
 
 //map
 let karte;
+let rng = Math.random;
 
 //HUD
 let hud;
@@ -68,12 +74,15 @@ let ani;
 let startTimer = false;
 let hitFrameMain = 0;
 let animationCounter = 0;
+let winner = -1;
 
-//bomb
-let bombP1 = [];
-let bombP2 = [];
-let explosionCountP1 = 0;
-let explosionCountP2 = 0;
+//bomb (one list and one explosion counter per player)
+let bombs = [];
+let explosionCount = [];
+
+//online: "local" = everyone on this keyboard, "host" / "client" = online lobby (see net.js)
+let netMode = "local";
+let myIndex = 0;
 
 
 //MENU
@@ -114,6 +123,8 @@ function preload() {
   explosionPic = loadImage("sprites/explosion.png");
   playerPic1 = loadImage("sprites/player1.png");
   playerPic2 = loadImage("sprites/player2.png");
+  playerPic3 = loadImage("sprites/player3.png");
+  playerPic4 = loadImage("sprites/player4.png");
   skater0 = loadImage("sprites/skater0.png");
   skater = loadImage("sprites/skater.png");
   banner = loadImage("sprites/banner.png");
@@ -122,6 +133,7 @@ function preload() {
   logo = loadImage("sprites/logo.png");
   menubox = loadImage("sprites/Menu.png");
   bomberman2 = loadImage("sprites/bomberman2.png");
+  winPics = [bomberman, bomberman2, loadImage("sprites/bomberman3.png"), loadImage("sprites/bomberman4.png")];
   setting = loadImage("sprites/setting.png");
   close = loadImage("sprites/close.png");
   kill = loadImage("sprites/kill.png");
@@ -147,11 +159,10 @@ function setup() {
   imageMode(CENTER);
   textSize(20);
 
-  playerOne = new Player(block + (block / 2), block + (block / 2)); //new Player (x,y);
-  playerTwo = new Player(700 - 25, 700 - 25);
-  karte = new Karte();
+  playerPics = [playerPic1, playerPic2, playerPic3, playerPic4];
   hud = new HUD();
   ani = new Animations();
+  loadSettings();
 
   menuSong = new SoundFile("sounds/thats-it-for-today-loop.wav"); //ViRiX Dreamcore, see credits
   hit1 = new SoundFile("sounds/hit1.wav");
@@ -166,6 +177,9 @@ function setup() {
   slice = new SoundFile("sounds/slice.mp3");
   itemCollected = new SoundFile("sounds/itemcollect.wav");
   spawn = new SoundFile("sounds/spawn.wav");
+  hitSounds = [hit1, hit2, hit1, hit2];
+
+  initPanels();
 
   //DRAW: first frame behind the start overlay, then wait for the click
   frame++;
@@ -178,28 +192,64 @@ function setup() {
     overlay.hidden = true;
     lastTime = performance.now();
     loop();
+    //BACKGROUND: browsers pause draw() in hidden tabs, keep the game (and the online host) running
+    setInterval(() => {
+      if (document.hidden) {
+        step();
+      }
+    }, STEP);
   });
 
   //RESET: keys when the tab loses focus, otherwise players keep walking
-  window.addEventListener("blur", () => {
-    playerOne.keys.fill(false);
-    playerTwo.keys.fill(false);
-  });
+  window.addEventListener("blur", releaseAllKeys);
 }
 
 
 function draw() {
+  step();
+}
+
+
+function step() {
   const now = performance.now();
-  accumulator = Math.min(accumulator + now - lastTime, STEP * 4);
+  //the online host may catch up to one second, everybody else at most 4 frames
+  const maxBehind = (netMode == "host" && gamemode == 2) ? 60 : 4;
+  accumulator = Math.min(accumulator + now - lastTime, STEP * maxBehind);
   lastTime = now;
 
+  //ONLINE CLIENT: the host decides when the next game frame happens
+  if (netMode == "client" && gamemode == 2) {
+    clientFrames();
+    return;
+  }
+
   //UPDATE: one game frame per 1/60 s (1 ms tolerance against timer jitter)
+  const outgoing = [];
   while (accumulator >= STEP - 1) {
     accumulator -= STEP;
-    frame++;
-    resetMatrix();
-    gameFrame();
+    if (netMode == "host" && gamemode == 2) {
+      //ONLINE HOST: every frame gets the inputs that arrived since the last one
+      const events = pendingEvents;
+      pendingEvents = [];
+      outgoing.push([frame + 1, events]);
+      runFrame(events);
+    } else {
+      runFrame([]);
+    }
   }
+  if (outgoing.length > 0) {
+    sendFrames(outgoing);
+  }
+}
+
+
+function runFrame(events) {
+  for (const event of events) {
+    applyEvent(event);
+  }
+  frame++;
+  resetMatrix();
+  gameFrame();
 }
 
 
@@ -224,7 +274,49 @@ function gameFrame() {
     case 4:
       quitScreen();
       break;
+
+    case 5:
+    case 6:
+      panelBackground();
+      break;
   }
+}
+
+
+//SWITCH: game state + show the matching HTML panel (5 = local / online, 6 = lobby)
+function showScreen(mode) {
+  gamemode = mode;
+  document.getElementById("panel-mode").hidden = mode != 5;
+  document.getElementById("panel-lobby").hidden = mode != 6;
+}
+
+
+//START: a new round for count players, online every browser uses the same seed
+function startMatch(count, seed) {
+  const spawns = [
+    [block + (block / 2), block + (block / 2)], //top left
+    [700 - 25, 700 - 25],                       //bottom right
+    [700 - 25, block + (block / 2)],            //top right
+    [block + (block / 2), 700 - 25]             //bottom left
+  ];
+  players = [];
+  bombs = [];
+  explosionCount = [];
+  for (let i = 0; i < count; i++) {
+    players.push(new Player(spawns[i][0], spawns[i][1])); //new Player (x,y);
+    bombs.push([]);
+    explosionCount.push(0);
+  }
+  karte = new Karte();
+  rng = seed === undefined ? Math.random : seededRandom(seed);
+
+  frame = 0;
+  hitFrameMain = 0;
+  startTimer = false;
+  animationCounter = 0;
+  endSound = false;
+  winner = -1;
+  showScreen(2);
 }
 
 
@@ -304,76 +396,94 @@ function gamestart() {
     //DRAW: BombList
     bombPlant();
 
-    playerOne.itemCollected(karte.itemMap);
-    playerTwo.itemCollected(karte.itemMap);
-
-    playerOne.render(playerPic1);
-    playerTwo.render(playerPic2);
-
-    if (!playerOne.cooldown) {
-      playerOne.move(karte.map, playerPic1);
-    }
-    if (!playerTwo.cooldown) {
-      playerTwo.move(karte.map, playerPic2);
+    for (const player of players) {
+      if (player.live > 0) {
+        player.itemCollected(karte.itemMap);
+      }
     }
 
-    //CHANGE: state if player 0 live
-    if ((playerOne.live == 0 && !playerOne.cooldown) || (playerTwo.live == 0 && !playerTwo.cooldown)) {
+    players.forEach((player, i) => player.render(playerPics[i]));
+
+    players.forEach((player, i) => {
+      if (!player.cooldown && player.live > 0) {
+        player.move(karte.map, playerPics[i]);
+      }
+    });
+
+    //DRAW: marker above the own character in online games
+    if (netMode != "local" && players[myIndex] && players[myIndex].live > 0 && !players[myIndex].cooldown) {
+      const me = players[myIndex];
+      push();
+      fill(255);
+      stroke(0);
+      strokeWeight(2);
+      triangle(me.pos.x - 7, me.pos.y - 48, me.pos.x + 7, me.pos.y - 48, me.pos.x, me.pos.y - 39);
+      pop();
+    }
+
+    //CHANGE: state if only one player is left (after the death animation)
+    const alive = players.filter((player) => player.live > 0);
+    const dying = players.some((player) => player.live == 0 && player.cooldown);
+    if (alive.length <= 1 && !dying) {
+      winner = alive.length == 1 ? players.indexOf(alive[0]) : -1;
       hitFrameMain = frame;
       animationCounter = 0;
       gamemode = 3;
     }
 
     //DRAW: live, speed, bombcount, explosionradius, killtext
-    hud.render(playerOne.live, playerOne.speed, playerOne.invBomb, playerTwo.live, playerTwo.speed, playerTwo.invBomb, playerOne.explosionRadius, playerTwo.explosionRadius);
+    if (players.length == 2) {
+      const [playerOne, playerTwo] = players;
+      hud.render(playerOne.live, playerOne.speed, playerOne.invBomb, playerTwo.live, playerTwo.speed, playerTwo.invBomb, playerOne.explosionRadius, playerTwo.explosionRadius);
+    } else {
+      players.forEach((player, i) => hud.renderCompact(player, i));
+      hud.drawBirds();
+    }
   }
 }
 
 function bombPlant() {
 
-  //COLISION: Explosion with player & Bomb with player
-  for (let i = 0; i < bombP1.length; i++) {
-    bombP1[i].bombPlanted(karte.map);
-    playerOne.checkHit(bombP1[i].explosionMap, hit1);
-    playerTwo.checkHit(bombP1[i].explosionMap, hit2);
-    playerOne.checkBomb(bombP1[i].bombPos, bombP1[i].bombActive);
-    playerTwo.checkBomb(bombP1[i].bombPos, bombP1[i].bombActive);
+  //REPEAT: for the bombs of every player
+  for (let owner = 0; owner < players.length; owner++) {
+    const list = bombs[owner];
+    for (let i = 0; i < list.length; i++) {
+      list[i].bombPlanted(karte.map);
 
-    //COLISION: Explosion with map
-    karte.change(bombP1[i].explosionMap, !bombP1[i].explosionActive, !bombP1[i].bombActive);
+      //COLISION: Explosion with player & Bomb with player
+      players.forEach((player, p) => {
+        if (player.live > 0) {
+          player.checkHit(list[i].explosionMap, hitSounds[p]);
+        }
+      });
+      for (const player of players) {
+        if (player.live > 0) {
+          player.checkBomb(list[i].bombPos, list[i].bombActive);
+        }
+      }
 
-    //COUNTER: How many explosions
-    if (bombP1[i].explode) {
-      explosionCountP1++;
-      bombP1[i].explode = false;
-    }
-    //REMOVE: delete bomb after explosion
-    if (!bombP1[i].bombActive && !bombP1[i].explosionActive) {
-      bombP1.splice(i, 1);
-      explosionCountP1--;
+      //COLISION: Explosion with map
+      karte.change(list[i].explosionMap, !list[i].explosionActive, !list[i].bombActive);
+
+      //COUNTER: How many explosions
+      if (list[i].explode) {
+        explosionCount[owner]++;
+        list[i].explode = false;
+      }
+      //REMOVE: delete bomb after explosion
+      if (!list[i].bombActive && !list[i].explosionActive) {
+        list.splice(i, 1);
+        explosionCount[owner]--;
+      }
     }
   }
+}
 
-  //REPEAT: for player two
-  for (let i = 0; i < bombP2.length; i++) {
-    bombP2[i].bombPlanted(karte.map);
-    playerOne.checkHit(bombP2[i].explosionMap, hit1);
-    playerTwo.checkHit(bombP2[i].explosionMap, hit2);
-    playerOne.checkBomb(bombP2[i].bombPos, bombP2[i].bombActive);
-    playerTwo.checkBomb(bombP2[i].bombPos, bombP2[i].bombActive);
-
-    //animation and change map after Explosion
-    karte.change(bombP2[i].explosionMap, !bombP2[i].explosionActive, !bombP2[i].bombActive);
-
-    if (bombP2[i].explode) {
-      explosionCountP2++;
-      bombP2[i].explode = false;
-    }
-    if (!bombP2[i].bombActive && !bombP2[i].explosionActive) {
-      //delete Bomb
-      bombP2.splice(i, 1);
-      explosionCountP2--;
-    }
+function placeBomb(p) {
+  if (players[p].invBomb > bombs[p].length - explosionCount[p]) {
+    //create new Bomb
+    bombs[p].push(new Bomb(players[p].pos, players[p].explosionRadius));
+    bombPut.play(1, 0.04 * volume);
   }
 }
 //___________________________________________________________________________________________________
@@ -390,19 +500,15 @@ function endScreen() {
   } else if (animationCounter < 300) {
     animationCounter = animationCounter + 25;
 
-  //BUTTON: Back to menu
+  //BUTTON: Back to menu (online: back to the lobby)
   } else if (keyIsPressed) {
-    playerOne.reset();
-    playerTwo.reset();
-    explosionCountP1 = 0;
-    explosionCountP2 = 0;
-    startTimer = false;
     animationCounter = 0;
-    karte.resetMap();
-
-    bombP1 = [];
-    bombP2 = [];
-    gamemode = 0;
+    if (netMode == "local") {
+      showScreen(0);
+    } else {
+      backToLobby();
+    }
+    return;
   }
 
   //DRAW Background banner
@@ -437,50 +543,117 @@ function quitScreen() {
   text("CLICK TO GO BACK", width / 2, 700);
 }
 
+//case 5 + 6: background behind the HTML panels (local / online, lobby)
+function panelBackground() {
+  imageMode(CENTER);
+  cursor(ARROW);
+  if (!menuSong.isPlaying()) {
+    menuSong.loop(1, 0.02 * volume);
+  }
+  fill(82, 115, 181);
+  rect(width / 2, height / 2, width, height);
+  ani.variable();
+  pic(bomberman, width - 100 + movement.x, height / 2 + movement.y);
+}
+
 //___________________________________________________________________________________________________
 //___________________________________________________________________________________________________
 
 
+//INPUT: events are [player, type, direction], type 0 = press, 1 = release, 2 = bomb, 3 = left the game
+function applyEvent([p, type, direction]) {
+  const player = players[p];
+  if (!player) {
+    return;
+  }
+  if (type == 0) {
+    if (!player.cooldown && player.live > 0 && gamemode == 2) {
+      player.pressDirection(direction);
+    }
+  } else if (type == 1) {
+    player.releaseDirection(direction);
+  } else if (type == 2) {
+    if (!player.cooldown && player.live > 0 && gamemode == 2) {
+      placeBomb(p);
+    }
+  } else if (type == 3) {
+    player.live = 0;
+    player.cooldown = false;
+    player.keys.fill(false);
+  }
+}
+
+//INPUT: online both key sets control the own character
+function ownInput(type, direction) {
+  if (netMode == "host") {
+    pendingEvents.push([myIndex, type, direction]);
+  } else {
+    sendInput(type, direction);
+  }
+}
 
 function keyPressed() {
-  //walk P1
-  if (!playerOne.cooldown && gamemode == 2) {
-    playerOne.keyPressed(keyCodeOne);
-  }
-  //walk P2
-  if (!playerTwo.cooldown && gamemode == 2) {
-    playerTwo.keyPressed(keyCodeTwo);
-  }
-
-  //bombkey P1
-  if (keyBombOne == keyCode && !playerOne.cooldown && gamemode == 2) {
-    if (playerOne.invBomb > bombP1.length - explosionCountP1) {
-      //create new Bomb
-      bombP1.push(new Bomb(playerOne.pos, playerOne.explosionRadius));
-      bombPut.play(1, 0.04 * volume);
-    }
-  }
-
-  //bombKey p2
-  if (keyBombTwo == keyCode && !playerTwo.cooldown && gamemode == 2) {
-    if (playerTwo.invBomb > bombP2.length - explosionCountP2) {
-      //create new Bomb
-      bombP2.push(new Bomb(playerTwo.pos, playerTwo.explosionRadius));
-      bombPut.play(1, 0.04 * volume);
+  if (gamemode == 2) {
+    if (netMode == "local") {
+      //walk P1 + P2
+      [keyCodeOne, keyCodeTwo].forEach((keySet, p) => {
+        const direction = keySet.indexOf(keyCode);
+        if (direction >= 0) {
+          applyEvent([p, 0, direction]);
+        }
+      });
+      //bombkey P1 + P2
+      if (keyCode == keyBombOne) {
+        applyEvent([0, 2, 0]);
+      }
+      if (keyCode == keyBombTwo) {
+        applyEvent([1, 2, 0]);
+      }
+    } else {
+      const direction = Math.max(keyCodeOne.indexOf(keyCode), keyCodeTwo.indexOf(keyCode));
+      if (direction >= 0) {
+        ownInput(0, direction);
+      }
+      if (keyCode == keyBombOne || keyCode == keyBombTwo) {
+        ownInput(2, 0);
+      }
     }
   }
 
   //BROWSER: stop arrow keys / space from scrolling and ALT from opening the menu bar
-  if ([18, 32, 37, 38, 39, 40, keyBombOne, keyBombTwo].includes(keyCode)) {
+  if (document.activeElement.tagName != "INPUT" && [18, 32, 37, 38, 39, 40, keyBombOne, keyBombTwo].includes(keyCode)) {
     return false;
   }
 }
 
 function keyReleased() {
-  playerOne.keyReleased(keyCodeOne);
-  playerTwo.keyReleased(keyCodeTwo);
+  if (netMode == "local") {
+    [keyCodeOne, keyCodeTwo].forEach((keySet, p) => {
+      const direction = keySet.indexOf(keyCode);
+      if (direction >= 0) {
+        applyEvent([p, 1, direction]);
+      }
+    });
+  } else if (gamemode == 2) {
+    const direction = Math.max(keyCodeOne.indexOf(keyCode), keyCodeTwo.indexOf(keyCode));
+    if (direction >= 0) {
+      ownInput(1, direction);
+    }
+  }
   if (keyCode == 18) {
     return false;
+  }
+}
+
+function releaseAllKeys() {
+  if (netMode == "local") {
+    for (const player of players) {
+      player.keys.fill(false);
+    }
+  } else if (gamemode == 2) {
+    for (let direction = 0; direction < 4; direction++) {
+      ownInput(1, direction);
+    }
   }
 }
 
