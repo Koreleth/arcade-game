@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bomberman</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="style.css">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  <script src="js/helpers.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/animations.js"></script>
+  <script src="js/bomb.js"></script>
+  <script src="js/hud.js"></script>
+  <script src="js/karte.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/bomberman.js"></script>
+</head>
+<body>
+  <main id="game"></main>
+
+  <!-- Browsers only allow audio after a user interaction -->
+  <div id="start-overlay">
+    <button id="start-button" type="button">CLICK TO START</button>
+    <p>2 Spieler &middot; eine Tastatur</p>
+    <p class="credits">
+      Some of the songs and/or sound effects in this project were created by ViRiX Dreamcore (David Mckee).
+      <a href="https://www.virixcore.net" target="_blank" rel="noopener">www.virixcore.net</a> for more information
+    </p>
+  </div>
+</body>
+</html>
