@@ -8,7 +8,7 @@ Der Ordner `web/` ist komplett eigenständig und kann so wie er ist hochgeladen 
 - **LOCAL – 2 PLAYERS:** wie im Original, zu zweit an einer Tastatur.
 - **ONLINE (2–4 Spieler):** Einer klickt auf *CREATE ONLINE LOBBY* und bekommt einen
   4-stelligen Code. Die anderen geben den Code bei *JOIN* ein, egal von wo,
-  oder öffnen den Einladungslink (*COPY INVITE LINK*, z. B. `…/Arcade-Game/?join=1234`).
+  oder öffnen den Einladungslink (*COPY INVITE LINK*, z. B. `…/arcade-game/?join=1234`).
   Sobald mindestens 2 Spieler da sind, kann der Host das Spiel starten.
   Online steuert jeder seinen eigenen Charakter mit **WASD oder den Pfeiltasten**
   und legt Bomben mit **einer der beiden Bomben-Tasten** (Standard: Leertaste / Alt Gr).
@@ -70,7 +70,7 @@ Danach <http://localhost:8080> öffnen. Den Online-Modus kann man lokal mit zwei
 bei jedem Push auf `main` den Ordner `web/`. Einmalig im Repo unter
 *Settings → Pages → Build and deployment → Source* **„GitHub Actions“** auswählen
 und danach unter *Actions* den Workflow einmal neu starten („Re-run all jobs“).
-Das Spiel ist dann unter `https://koreleth.github.io/Arcade-Game/` erreichbar.
+Das Spiel ist dann unter `https://koreleth.github.io/arcade-game/` erreichbar.
 
 **itch.io:** Den *Inhalt* von `web/` zippen (die `index.html` muss oben im ZIP liegen),
 als neues Projekt mit „Kind of project: HTML“ hochladen und eine Größe von 750×750 einstellen.
