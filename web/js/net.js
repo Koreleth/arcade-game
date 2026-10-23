@@ -47,6 +47,12 @@ function initPanels() {
   document.getElementById("lobby-code").addEventListener("click", () => {
     navigator.clipboard?.writeText(lobbyCode).then(() => setStatus("lobby-status", "CODE COPIED"), () => {});
   });
+  document.getElementById("btn-invite").addEventListener("click", () => {
+    navigator.clipboard?.writeText(inviteLink(lobbyCode)).then(
+      () => setStatus("lobby-status", "LINK COPIED - SEND IT TO YOUR FRIENDS"),
+      () => setStatus("lobby-status", inviteLink(lobbyCode))
+    );
+  });
 
   //CLOSE: tell the others right away instead of letting the connection time out
   window.addEventListener("beforeunload", () => {
@@ -58,6 +64,26 @@ function initPanels() {
 
 function setStatus(id, message) {
   document.getElementById(id).textContent = message;
+}
+
+//INVITE: link that opens the game and joins the lobby directly (?join=1234)
+function inviteLink(code) {
+  return location.origin + location.pathname + "?join=" + code;
+}
+
+function inviteCode() {
+  const code = new URLSearchParams(location.search).get("join");
+  return /^\d{4}$/.test(code || "") ? code : null;
+}
+
+//JOIN: from an invite link, right after "CLICK TO START"
+function joinFromInvite() {
+  const code = inviteCode();
+  if (code) {
+    showScreen(5);
+    document.getElementById("join-code").value = code;
+    joinLobby(code);
+  }
 }
 
 

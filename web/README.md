@@ -7,7 +7,8 @@ Der Ordner `web/` ist komplett eigenständig und kann so wie er ist hochgeladen 
 
 - **LOCAL – 2 PLAYERS:** wie im Original, zu zweit an einer Tastatur.
 - **ONLINE (2–4 Spieler):** Einer klickt auf *CREATE ONLINE LOBBY* und bekommt einen
-  4-stelligen Code. Die anderen geben den Code bei *JOIN* ein, egal von wo.
+  4-stelligen Code. Die anderen geben den Code bei *JOIN* ein, egal von wo,
+  oder öffnen den Einladungslink (*COPY INVITE LINK*, z. B. `…/Arcade-Game/?join=1234`).
   Sobald mindestens 2 Spieler da sind, kann der Host das Spiel starten.
   Online steuert jeder seinen eigenen Charakter mit **WASD oder den Pfeiltasten**
   und legt Bomben mit **einer der beiden Bomben-Tasten** (Standard: Leertaste / Alt Gr).

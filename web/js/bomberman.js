@@ -187,11 +187,16 @@ function setup() {
   noLoop();
 
   const overlay = document.getElementById("start-overlay");
-  document.getElementById("start-button").addEventListener("click", () => {
+  const startButton = document.getElementById("start-button");
+  if (inviteCode()) {
+    startButton.textContent = "CLICK TO JOIN LOBBY " + inviteCode();
+  }
+  startButton.addEventListener("click", () => {
     audioCtx.resume();
     overlay.hidden = true;
     lastTime = performance.now();
     loop();
+    joinFromInvite();
     //BACKGROUND: browsers pause draw() in hidden tabs, keep the game (and the online host) running
     setInterval(() => {
       if (document.hidden) {
