@@ -1,0 +1,5 @@
+# Local Claude Code configuration (not part of the game)
+.claude/
+
+# Copyrighted song, only used by the local Processing version
+sounds/sexbomb.mp3
