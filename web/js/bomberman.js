@@ -14,6 +14,10 @@ let ambient;
 let quake;
 let winP1;
 let winP2;
+let winP3;
+let winP4;
+let deathP3;
+let deathP4;
 let explosionSound;
 let itemCollected;
 let spawn;
@@ -58,6 +62,7 @@ let players = [];
 let playerPics = [];
 let winPics = [];
 let hitSounds = [];
+let winSounds = [];
 const PLAYER_NAMES = ["PLAYER ONE", "PLAYER TWO", "PLAYER THREE", "PLAYER FOUR"];
 
 //map
@@ -173,11 +178,16 @@ function setup() {
   ambient = new SoundFile("sounds/ambient1.wav");
   winP1 = new SoundFile("sounds/p1win.wav");
   winP2 = new SoundFile("sounds/p2win.wav");
+  winP3 = new SoundFile("sounds/p3win.wav");
+  winP4 = new SoundFile("sounds/p4win.wav");
+  deathP3 = new SoundFile("sounds/p3death.wav");
+  deathP4 = new SoundFile("sounds/p4death.wav");
   explosionSound = new SoundFile("sounds/explosion1.wav");
   slice = new SoundFile("sounds/slice.mp3");
   itemCollected = new SoundFile("sounds/itemcollect.wav");
   spawn = new SoundFile("sounds/spawn.wav");
-  hitSounds = [hit1, hit2, hit1, hit2];
+  hitSounds = [hit1, hit2, deathP3, deathP4];
+  winSounds = [winP1, winP2, winP3, winP4];
 
   initPanels();
 

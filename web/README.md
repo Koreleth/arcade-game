@@ -51,7 +51,9 @@ p5.js (cdnjs) und PeerJS (jsDelivr) werden über ein CDN geladen.
   Verbindung zustande. Dafür bräuchte man einen TURN-Server, der ist nicht eingebaut.
 - Der Host sollte seinen Tab im Vordergrund lassen. Im Hintergrund drosseln Browser die Seite,
   und dann läuft das Spiel für alle langsamer.
-- Siegesansagen gibt es nur für Spieler 1 und 2 (`p1win.wav`, `p2win.wav`).
+
+**Sounds pro Spieler:** Jeder Charakter hat einen eigenen Todes- und Siegessound
+(`hit1.wav` / `p1win.wav` bis `p4death.wav` / `p4win.wav`).
 
 ## Lokal starten
 

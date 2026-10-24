@@ -169,13 +169,8 @@ class Animations {
         pic(winPics[winner], -1 * animationCounter - 200, 0);
         scale(-1, 1);
       }
-      //SOUND: there are only voice lines for player one and two
       if (!endSound) {
-        if (winner == 0) {
-          winP1.play(1, 0.1 * volume);
-        } else if (winner == 1) {
-          winP2.play(1, 0.1 * volume);
-        }
+        winSounds[winner].play(1, 0.1 * volume);
         endSound = true;
       }
     }
